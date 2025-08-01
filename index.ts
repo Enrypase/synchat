@@ -1,8 +1,7 @@
 import { canThrow } from './lib/can-throw';
-import { supabaseAdmin as supabase } from './lib/supabase'
+import { supabaseAdmin } from './lib/supabase'
 import { crossPlatformMessenger } from './lib/cross-platform-messenger'
 
-console.log("Hello via Bun!");
 
 // Initialize cross-platform messaging
 async function initializeMessaging() {
@@ -16,8 +15,7 @@ async function initializeMessaging() {
 
 // Example: Test Supabase connection and setup realtime
 async function testSupabase() {
-    const [data, err] = await canThrow(() => supabase.auth.getSession())
-    console.log('Session check:', data, err)
+    const [data, err] = await canThrow(() => supabaseAdmin.auth.getSession())
 
     if(err || !data) return console.error('Session error:', err)
     if(data.error) return console.error('Auth error:', data.error)
@@ -26,41 +24,37 @@ async function testSupabase() {
     console.log('Current session:', data.data.session ? 'Authenticated' : 'Not authenticated')
     
     // Setup realtime channel for both broadcast and table updates
-    const channel = supabase.channel('realtime_messages')
-    
-    // Listen for broadcast messages
-    channel.on('broadcast', { event: 'message' }, (payload) => {
-        console.log('📡 Broadcast message received:', payload)
-    })
-    
-    // Listen for any broadcast event (catch-all)
-    channel.on('broadcast', { event: '*' }, (payload) => {
-        console.log('📡 Any broadcast event:', payload)
-    })
+    const channel = supabaseAdmin.channel('realtime_messages')
     
     // Listen for table updates on realtime_messages table
     channel.on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'realtime_messages' 
-    }, async (payload) => {
-        console.log('🗄️ Table update:', payload)
-        console.log('Event type:', payload.eventType)
-        console.log('New record:', payload.new)
-        console.log('Old record:', payload.old)
-        
+    }, async (payload) => {   
+        console.log("From Supabase:",payload.eventType)
         // Handle cross-platform messaging for INSERT events
         if (payload.eventType === 'INSERT' && payload.new) {
-            console.log('🔄 Processing cross-platform message...')
             await crossPlatformMessenger.handleMessage(payload.new as any)
+        }
+        // Handle message updates for EDIT events  
+        else if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+            // Check if this is a deletion (deleted_at was set)
+            if (payload.new.deleted_at && !payload.old.deleted_at) {
+                console.log("Message deletion detected via database update")
+                await crossPlatformMessenger.handleMessageDeletion(payload.new as any)
+            } else {
+                // Regular content update
+                await crossPlatformMessenger.handleMessageUpdate(payload.new as any, payload.old as any)
+            }
         }
     })
     
-    // Subscribe to the channel
+    // Subscribe to the channel to start receiving events
     channel.subscribe((status) => {
         console.log('🔌 Realtime subscription status:', status)
         if (status === 'SUBSCRIBED') {
-            console.log('✅ Successfully subscribed to realtime channel!')
+            console.log('✅ Successfully subscribed to realtime_messages channel!')
         } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ Channel subscription error - check your Supabase configuration')
         } else if (status === 'TIMED_OUT') {
@@ -70,19 +64,6 @@ async function testSupabase() {
     
     return channel
 }
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-    console.log('\n🔄 Received SIGINT, shutting down gracefully...')
-    await crossPlatformMessenger.shutdown()
-    process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-    console.log('\n🔄 Received SIGTERM, shutting down gracefully...')
-    await crossPlatformMessenger.shutdown()
-    process.exit(0)
-})
 
 // Initialize everything
 async function main() {

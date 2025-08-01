@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Get environment variables
-const supabaseUrl = process.env.PROJECT_URL
+const supabaseUrl = process.env.SUPABASE_PROJECT_URL
 const supabaseAnonKey = process.env.ANON_KEY
 const supabaseServiceRole = process.env.SERVICE_ROLE
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing PROJECT_URL or ANON_KEY environment variables. Please check your .env file.')
+  throw new Error('Missing SUPABASE_PROJECT_URL or ANON_KEY environment variables. Please check your .env file.')
 }
 
 if (!supabaseServiceRole) {
