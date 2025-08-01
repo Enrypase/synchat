@@ -1,0 +1,17 @@
+{
+  "name": "synchat",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
+    "discord.js": "^14.21.0",
+    "grammy": "^1.37.0"
+  }
+}
