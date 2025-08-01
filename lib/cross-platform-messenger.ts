@@ -2,11 +2,11 @@ import { Bot } from 'grammy'
 import { Client, GatewayIntentBits } from 'discord.js'
 
 // Bot tokens for cross-platform messaging
-export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-export const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
+export const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN
+export const DISCORD_TOKEN = process.env.DISCORD_TOKEN
 
-if (!TELEGRAM_BOT_TOKEN || !DISCORD_BOT_TOKEN) {
-  throw new Error('Missing TELEGRAM_BOT_TOKEN or DISCORD_BOT_TOKEN environment variables. Please check your .env file.')
+if (!TELEGRAM_TOKEN || !DISCORD_TOKEN) {
+  throw new Error('Missing TELEGRAM_TOKEN or DISCORD_TOKEN environment variables. Please check your .env file.')
 }
 
 interface MessagePayload {
@@ -31,15 +31,15 @@ class CrossPlatformMessenger {
   async initialize() {
     try {
       // Initialize Telegram bot
-      if (TELEGRAM_BOT_TOKEN) {
-        this.telegramBot = new Bot(TELEGRAM_BOT_TOKEN)
+      if (TELEGRAM_TOKEN) {
+        this.telegramBot = new Bot(TELEGRAM_TOKEN)
         console.log('✅ Telegram bot initialized')
       } else {
         console.warn('⚠️ TELEGRAM_BOT_TOKEN not found - Telegram messaging disabled')
       }
 
       // Initialize Discord bot
-      if (DISCORD_BOT_TOKEN) {
+      if (DISCORD_TOKEN) {
         this.discordBot = new Client({
           intents: [
             GatewayIntentBits.Guilds,
@@ -52,7 +52,7 @@ class CrossPlatformMessenger {
           console.log('✅ Discord bot ready as', this.discordBot?.user?.tag)
         })
 
-        await this.discordBot.login(DISCORD_BOT_TOKEN)
+        await this.discordBot.login(DISCORD_TOKEN)
         console.log('✅ Discord bot initialized')
       } else {
         console.warn('⚠️ DISCORD_BOT_TOKEN not found - Discord messaging disabled')
